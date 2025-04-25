@@ -58,7 +58,6 @@ subprojects {
 
             testImplementation("org.springframework.integration:spring-integration-test")
             testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-
         }
 
         java {
