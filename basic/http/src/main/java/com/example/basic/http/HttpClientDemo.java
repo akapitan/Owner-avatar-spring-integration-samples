@@ -1,5 +1,6 @@
 package com.example.basic.http;
 
+import com.example.basic.http.java.HttpOutboundGatewayConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;

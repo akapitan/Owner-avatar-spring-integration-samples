@@ -1,4 +1,4 @@
-package com.example.basic.http;
+package com.example.basic.http.java;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
