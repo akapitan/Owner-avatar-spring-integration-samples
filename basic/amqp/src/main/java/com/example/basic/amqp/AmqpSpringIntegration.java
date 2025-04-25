@@ -1,4 +1,4 @@
-package com.example.samples;
+package com.example.basic.amqp;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -6,10 +6,10 @@ import org.springframework.integration.http.config.EnableIntegrationGraphControl
 
 @SpringBootApplication
 @EnableIntegrationGraphController
-public class SpringIntegrationSamplesApplication {
+public class AmqpSpringIntegration {
 
     public static void main(String[] args) {
-        SpringApplication.run(SpringIntegrationSamplesApplication.class, args);
+        SpringApplication.run(AmqpSpringIntegration.class, args);
     }
 
 }

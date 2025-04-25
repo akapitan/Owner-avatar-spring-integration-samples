@@ -1,7 +1,7 @@
 plugins {
     java
-    id("org.springframework.boot") version "3.4.5"
-    id("io.spring.dependency-management") version "1.1.7"
+    base
+    idea
 }
 
 group = "com.example"
@@ -18,15 +18,23 @@ repositories {
 }
 
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-integration")
-    implementation("org.springframework.integration:spring-integration-amqp")
-    implementation("org.springframework.boot:spring-boot-starter-amqp")
-    implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.springframework.integration:spring-integration-http")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.springframework.integration:spring-integration-test")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
+
+// Define repositories for buildscript
+buildscript {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+        maven { url = uri("https://repo.spring.io/milestone") }
+        maven { url = uri("https://repo.spring.io/snapshot") }
+    }
+    dependencies {
+        classpath("io.spring.gradle:dependency-management-plugin:1.1.7")
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:3.4.5")
+        classpath("org.gretty:gretty:4.0.3")
+    }
+}
+
 
 tasks.withType<Test> {
     useJUnitPlatform()
@@ -36,21 +44,21 @@ val aggregatorModules = listOf("basic", "advanced")
 subprojects {
     if (name !in aggregatorModules) {
         apply(plugin = "java")
-        apply(plugin = "io.spring.dependency-management")
         apply(plugin = "org.springframework.boot")
+        apply(plugin = "io.spring.dependency-management")
 
         repositories {
             mavenCentral()
         }
-        dependencyManagement {
-            imports {
-                mavenBom("org.springframework.boot:spring-boot-dependencies:3.4.5")
-            }
-        }
 
         dependencies {
             implementation("org.springframework.boot:spring-boot-starter")
+            implementation("org.springframework.boot:spring-boot-starter-integration")
             testImplementation("org.springframework.boot:spring-boot-starter-test")
+
+            testImplementation("org.springframework.integration:spring-integration-test")
+            testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
         }
 
         java {

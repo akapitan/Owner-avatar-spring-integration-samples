@@ -1,4 +1,4 @@
-package com.example.samples.service;
+package com.example.basic.amqp.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
