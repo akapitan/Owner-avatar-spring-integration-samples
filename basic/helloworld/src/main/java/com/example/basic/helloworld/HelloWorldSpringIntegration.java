@@ -12,5 +12,7 @@ public class HelloWorldSpringIntegration {
         HelloWorldConfiguration.HelloGateway gateway = context.getBean(HelloWorldConfiguration.HelloGateway.class);
 
         System.out.println("==> " + gateway.sendMessage("Spring Integration"));
+
+        context.close();
     }
 }
