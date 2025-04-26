@@ -37,6 +37,8 @@ public class IntegrationDSLConfig {
         @Gateway(requestChannel = "personUpdateInput")
         int updatePersonAge(Map<String, Object> params);
 
+        @Gateway(requestChannel = "personRetrieveByAgeInput")
+        List<Person> findByMinimumAge(int age);
     }
 
     @Bean
@@ -98,4 +100,16 @@ public class IntegrationDSLConfig {
                 .get();
     }
 
+    @Bean
+    @Transactional
+    public IntegrationFlow personRetrieveByAgeFlow(EntityManagerFactory entityManagerFactory) {
+        return IntegrationFlow.from("personRetrieveByAgeInput")
+                .handle(Jpa.retrievingGateway(entityManagerFactory)
+                                .jpaQuery("FROM Person p WHERE p.age >= :minAge")
+                                .parameterExpression("minAge", "payload")
+                                .expectSingleResult(false)
+                                .deleteAfterPoll(false),
+                        ConsumerEndpointSpec::transactional)
+                .get();
+    }
 }
