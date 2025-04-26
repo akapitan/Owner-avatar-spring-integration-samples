@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class JpaIntegrationTest {
 
     @Autowired
-    private IntegrationConfig.PersonGateway personGateway;
+    private IntegrationDSLConfig.PersonGateway personGateway;
 
     @Test
     void testPersonIntegrationFlow() {

@@ -17,7 +17,7 @@ import java.util.List;
 
 @Configuration
 @EnableTransactionManagement
-public class IntegrationConfig {
+public class IntegrationDSLConfig {
 
     @MessagingGateway
     public interface PersonGateway {
