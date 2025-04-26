@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 
 @Configuration
 @EnableTransactionManagement
@@ -32,6 +33,10 @@ public class IntegrationDSLConfig {
 
         @Gateway(requestChannel = "personRetrieveInput")
         Person findByName(String name);
+
+        @Gateway(requestChannel = "personUpdateInput")
+        int updatePersonAge(Map<String, Object> params);
+
     }
 
     @Bean
@@ -76,7 +81,21 @@ public class IntegrationDSLConfig {
                                 .expectSingleResult(true)
                                 .deleteAfterPoll(true),
                         e -> e.poller(p -> PollerFactory.fixedDelay(Duration.ofSeconds(5))))
-//                .channel(c -> c.queue("pollingResults"))
+                .channel(c -> c.queue("pollingResults"))
                 .log().nullChannel();
     }
+
+    //    JPA Outbound Gateway - updating
+    @Bean
+    @Transactional
+    public IntegrationFlow personUpdateFlow(EntityManagerFactory entityManagerFactory) {
+        return IntegrationFlow.from("personUpdateInput")
+                .handle(Jpa.updatingGateway(entityManagerFactory)
+                                .jpaQuery("UPDATE Person p SET p.age = :newAge WHERE p.name = :name")
+                                .parameterExpression("name", "payload.name")
+                                .parameterExpression("newAge", "payload.newAge"),
+                        ConsumerEndpointSpec::transactional)
+                .get();
+    }
+
 }
