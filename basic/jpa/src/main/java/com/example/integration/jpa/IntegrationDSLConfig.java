@@ -7,12 +7,17 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.annotation.Gateway;
 import org.springframework.integration.annotation.MessagingGateway;
+import org.springframework.integration.dsl.ConsumerEndpointSpec;
 import org.springframework.integration.dsl.IntegrationFlow;
+import org.springframework.integration.dsl.PollerFactory;
+import org.springframework.integration.jpa.dsl.Jpa;
+import org.springframework.integration.jpa.support.PersistMode;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.List;
 
 @Configuration
@@ -38,10 +43,13 @@ public class IntegrationDSLConfig {
     @Transactional
     public IntegrationFlow personSaveFlow(EntityManager entityManager) {
         return IntegrationFlow.from("personInput")
-                .<Person>handle((person, headers) -> {
-                    entityManager.persist(person);
-                    return person;
-                })
+//                .<Person>handle((person, headers) -> {
+//                    entityManager.persist(person);
+//                    return person;
+//                })
+                .handle(Jpa.outboundAdapter(entityManager)
+                        .entityClass(Person.class)
+                        .persistMode(PersistMode.PERSIST), ConsumerEndpointSpec::transactional)
                 .get();
     }
 
@@ -57,5 +65,18 @@ public class IntegrationDSLConfig {
                     return results.isEmpty() ? null : results.getFirst();
                 })
                 .get();
+    }
+
+    @Bean
+    public IntegrationFlow pollingAdapterFlow(EntityManagerFactory entityManagerFactory) {
+        return IntegrationFlow
+                .from(Jpa.inboundAdapter(entityManagerFactory)
+                                .entityClass(Person.class)
+                                .maxResults(1)
+                                .expectSingleResult(true)
+                                .deleteAfterPoll(true),
+                        e -> e.poller(p -> PollerFactory.fixedDelay(Duration.ofSeconds(5))))
+//                .channel(c -> c.queue("pollingResults"))
+                .log().nullChannel();
     }
 }
