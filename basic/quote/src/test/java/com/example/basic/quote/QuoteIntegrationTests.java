@@ -6,12 +6,12 @@ import com.example.basic.quote.service.TickerStream;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.integration.test.context.SpringIntegrationTest;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.math.BigDecimal;
 
@@ -26,10 +26,10 @@ class QuoteIntegrationTests {
     @Autowired
     private ApplicationContext applicationContext;
 
-    @MockBean
+    @MockitoBean
     private QuoteService quoteService;
 
-    @MockBean
+    @MockitoBean
     private TickerStream tickerStream;
 
     @Test

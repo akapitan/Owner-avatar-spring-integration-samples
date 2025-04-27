@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<order>
+    <orderItem>
+        <isbn>1234</isbn>
+        <quantity>2</quantity>
+    </orderItem>
+    <orderItem>
+        <isbn>5678</isbn>
+        <quantity>1</quantity>
+    </orderItem>
+</order>
