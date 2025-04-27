@@ -13,7 +13,6 @@ import org.springframework.messaging.PollableChannel;
 import java.util.function.Supplier;
 
 @Configuration
-@EnableIntegration
 public class PollerConfiguration {
 
     @Bean

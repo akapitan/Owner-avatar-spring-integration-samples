@@ -5,14 +5,11 @@ import com.example.basic.xml.service.OrderItemTransformer;
 import com.example.basic.xml.service.StockChecker;
 import com.example.basic.xml.service.WarehouseDispatch;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.integration.annotation.IntegrationComponentScan;
 import org.springframework.integration.annotation.Router;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.integration.annotation.Transformer;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.channel.QueueChannel;
-import org.springframework.integration.config.EnableIntegration;
 import org.springframework.integration.endpoint.PollingConsumer;
 import org.springframework.integration.scheduling.PollerMetadata;
 import org.springframework.integration.splitter.AbstractMessageSplitter;
@@ -25,10 +22,8 @@ import javax.xml.transform.dom.DOMSource;
 import java.util.HashMap;
 import java.util.Map;
 
-@Configuration
-@EnableIntegration
-@IntegrationComponentScan
-public class IntegrationConfig {
+//@Configuration
+public class IntegrationJavaConfig {
 
     @Bean
     public Map<String, String> orderNamespaceMap() {
