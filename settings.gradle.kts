@@ -1,4 +1,4 @@
-rootProject.name = "springIntegrationSamples"
+rootProject.name = "SpringIntegrationSamples"
 
 //include("basic")
 //include("basic:helloworld")
