@@ -107,12 +107,14 @@ public class IntegrationJavaConfig {
         return pollerMetadata;
     }*/
 
+/*
     @ServiceActivator(inputChannel = "stockCheckerChannel")
     public Message<?> checkStock(Message<?> message) {
         Message<?> result = stockChecker().checkStock(message);
         orderRoutingChannel().send(result);
         return result;
     }
+*/
 
     @Router(inputChannel = "orderRoutingChannel")
     public String routeOrder(Message<?> message) {

@@ -6,9 +6,12 @@ import com.example.basic.xml.service.StockChecker;
 import com.example.basic.xml.service.WarehouseDispatch;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.integration.channel.QueueChannel;
+import org.springframework.integration.core.MessageSource;
 import org.springframework.integration.dsl.IntegrationFlow;
+import org.springframework.integration.dsl.MessageChannels;
+import org.springframework.integration.dsl.QueueChannelSpec;
 import org.springframework.integration.xml.splitter.XPathMessageSplitter;
+import org.springframework.messaging.Message;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,9 +35,37 @@ public class IntegrationJavaDsl {
     }
 
     @Bean
-    public QueueChannel ordersChannel() {
-        return new QueueChannel();
+    public QueueChannelSpec ordersChannel() {
+        return MessageChannels.queue();
     }
+
+
+    @Bean
+    public MessageSource<String> queueChannelMessageSource() {
+        return () -> (Message<String>) ordersChannel().getObject().receive();
+    }
+    /**
+     * Main integration flow using Java DSL
+     */
+    @Bean
+    public IntegrationFlow orderProcessingFlow() {
+        return IntegrationFlow
+                .from(queueChannelMessageSource(), e -> e.poller(p -> p.fixedRate(5000)))
+                .split(orderItemSplitter())
+                .<String, Boolean>route(this::isInStock, mapping -> mapping
+                        .subFlowMapping(true, sf -> sf.handle(this.warehouseDispatch, "dispatch"))
+                        .subFlowMapping(false, sf -> sf.handle(this.orderItemTransformer, "transformToSupplierFormat").handle(this.externalResupply, "orderResupply")))
+                .get();
+    }
+
+    /*
+    @Bean
+    public IntegrationFlow orderPollingFlow() {
+        return IntegrationFlow
+                .from(ordersChannel())
+                .bridge(e -> e.poller(p -> p.fixedRate(1000)))
+                .get();
+    }*/
 
     @Bean
     public Map<String, String> orderNamespaceMap() {
@@ -52,31 +83,6 @@ public class IntegrationJavaDsl {
     }
 
     /**
-     * Main integration flow using Java DSL
-     */
-    @Bean
-    public IntegrationFlow orderProcessingFlow() {
-        return IntegrationFlow
-                .from(ordersChannel())
-                .split(orderItemSplitter())
-                .<String, Boolean>route(this::isInStock,
-                        mapping -> mapping.subFlowMapping(true, sf -> sf.handle(this.warehouseDispatch, "dispatch"))
-                                .subFlowMapping(false, sf -> sf.handle(this.orderItemTransformer, "transformToSupplierFormat").handle(this.externalResupply, "orderResupply")))
-                .get();
-    }
-
-    /**
-     * Polling flow to initiate order processing
-     */
-    @Bean
-    public IntegrationFlow orderPollingFlow() {
-        return IntegrationFlow
-                .from(ordersChannel())
-                .bridge(e -> e.poller(p -> p.fixedRate(1000)))
-                .get();
-    }
-
-    /**
      * Determines if an item is in stock based on the message payload
      */
     private boolean isInStock(String xmlPayload) {
@@ -89,8 +95,8 @@ public class IntegrationJavaDsl {
             doc = builder.parse(is);
 
             // Check the in-stock attribute
-            boolean inStock = Boolean.parseBoolean(doc.getDocumentElement().getAttribute("in-stock"));
-            return inStock;
+            String isbn = doc.getDocumentElement().getAttribute("isbn");
+            return this.stockChecker.checkStock(isbn);
         } catch (Exception e) {
             // Consider adding logging here, e.g., logger.error("Failed to check stock", e);
             return false;

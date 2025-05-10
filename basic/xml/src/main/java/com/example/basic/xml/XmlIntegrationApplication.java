@@ -27,13 +27,15 @@ public class XmlIntegrationApplication {
         try {
             // Get the order channel and send the order
             PollableChannel ordersChannel = context.getBean("ordersChannel", PollableChannel.class);
-            boolean sent = ordersChannel.send(MessageBuilder.withPayload(orderXml).build());
-
+            for (int i = 0; i < 10; i++) {
+                boolean sent = ordersChannel.send(MessageBuilder.withPayload(orderXml).build());
             logger.info("Order sent to channel: {}", sent);
             logger.info("Order processing flow started...");
+            Thread.sleep(100);
+            }
 
             // Keep the application running for a while to allow message flow completion
-            Thread.sleep(10000);
+            Thread.sleep(20000);
         } catch (Exception e) {
             logger.error("Error in processing", e);
         } finally {
