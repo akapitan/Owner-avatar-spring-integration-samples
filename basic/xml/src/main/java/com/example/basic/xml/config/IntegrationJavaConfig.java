@@ -1,5 +1,6 @@
 package com.example.basic.xml.config;
 
+import com.example.basic.xml.domain.OrderItem;
 import com.example.basic.xml.service.ExternalResupply;
 import com.example.basic.xml.service.OrderItemTransformer;
 import com.example.basic.xml.service.StockChecker;
@@ -11,13 +12,13 @@ import org.springframework.integration.annotation.Transformer;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.channel.QueueChannel;
 import org.springframework.integration.endpoint.PollingConsumer;
-import org.springframework.integration.scheduling.PollerMetadata;
 import org.springframework.integration.splitter.AbstractMessageSplitter;
 import org.springframework.integration.xml.splitter.XPathMessageSplitter;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.scheduling.support.PeriodicTrigger;
 
+import javax.xml.bind.JAXBException;
 import javax.xml.transform.dom.DOMSource;
 import java.util.HashMap;
 import java.util.Map;
@@ -146,14 +147,14 @@ public class IntegrationJavaConfig {
     }
 
     @Transformer(inputChannel = "outOfStockChannel")
-    public Message<?> transformOrder(Message<?> message) {
+    public Message<?> transformOrder(Message<String> message) throws JAXBException {
         Message<?> result = orderItemTransformer().transformToSupplierFormat(message);
         resupplyOrderChannel().send(result);
         return result;
     }
 
     @ServiceActivator(inputChannel = "resupplyOrderChannel")
-    public void orderResupply(Object payload) {
+    public void orderResupply(OrderItem payload) {
         externalResupply().orderResupply(payload);
     }
 }

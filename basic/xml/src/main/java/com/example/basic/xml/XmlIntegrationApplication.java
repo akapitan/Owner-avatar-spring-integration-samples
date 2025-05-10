@@ -22,7 +22,7 @@ public class XmlIntegrationApplication {
 
         // Read sample order XML
         String orderXml = readSampleXml();
-        logger.info("Order XML loaded: {}", orderXml);
+//        logger.info("Order XML loaded: {}", orderXml);
 
         try {
             // Get the order channel and send the order
@@ -31,7 +31,7 @@ public class XmlIntegrationApplication {
                 boolean sent = ordersChannel.send(MessageBuilder.withPayload(orderXml).build());
             logger.info("Order sent to channel: {}", sent);
             logger.info("Order processing flow started...");
-            Thread.sleep(100);
+//            Thread.sleep(100);
             }
 
             // Keep the application running for a while to allow message flow completion

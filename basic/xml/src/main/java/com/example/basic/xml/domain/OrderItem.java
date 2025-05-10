@@ -1,10 +1,15 @@
 package com.example.basic.xml.domain;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+
+@XmlAccessorType(XmlAccessType.FIELD)
 public class OrderItem {
+
     private String isbn;
     private int quantity;
-    private boolean inStock;
 
+    // getters and setters
     public String getIsbn() {
         return isbn;
     }
@@ -21,11 +26,11 @@ public class OrderItem {
         this.quantity = quantity;
     }
 
-    public boolean isInStock() {
-        return inStock;
-    }
-
-    public void setInStock(boolean inStock) {
-        this.inStock = inStock;
+    @Override
+    public String toString() {
+        return "OrderItem{" +
+                "isbn='" + isbn + '\'' +
+                ", quantity=" + quantity +
+                '}';
     }
 }
