@@ -99,13 +99,13 @@ public class IntegrationJavaConfig {
         consumer.setTrigger(new PeriodicTrigger(1000));
         return consumer;
     }
-
+/*
     @Bean(name = PollerMetadata.DEFAULT_POLLER)
     public PollerMetadata defaultPoller() {
         PollerMetadata pollerMetadata = new PollerMetadata();
         pollerMetadata.setTrigger(new PeriodicTrigger(1000));
         return pollerMetadata;
-    }
+    }*/
 
     @ServiceActivator(inputChannel = "stockCheckerChannel")
     public Message<?> checkStock(Message<?> message) {

@@ -10,20 +10,22 @@ import org.springframework.integration.channel.QueueChannel;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.xml.splitter.XPathMessageSplitter;
 import org.springframework.messaging.Message;
-import org.w3c.dom.Document;
 
 import javax.xml.transform.dom.DOMSource;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Spring Integration configuration using Java DSL
  */
 @Configuration
-//@EnableIntegration
-//@IntegrationComponentScan
 public class IntegrationJavaDsl {
+
+    private final OrderItemTransformer orderItemTransformer;
+
+    public IntegrationJavaDsl(OrderItemTransformer orderItemTransformer) {
+        this.orderItemTransformer = orderItemTransformer;
+    }
 
     @Bean
     public StockChecker stockChecker() {
@@ -40,10 +42,10 @@ public class IntegrationJavaDsl {
         return new ExternalResupply();
     }
 
-    @Bean
+/*    @Bean
     public OrderItemTransformer orderItemTransformer() {
         return new OrderItemTransformer();
-    }
+    }*/
 
     @Bean
     public QueueChannel ordersChannel() {
@@ -73,15 +75,12 @@ public class IntegrationJavaDsl {
         return IntegrationFlow
                 .from(ordersChannel())
                 .split(orderItemSplitter())
-//                .handle(message -> stockChecker().checkStock(message))
-//                .handle(Document.class, //
-//                        (payload, headers) -> handleSubmitAiTranslationJob(payload))
-                .<Message<?>, Boolean>route(this::isInStock,
+                .<String, Boolean>route(this::isInStock,
                         mapping -> mapping
                                 .subFlowMapping(true, sf -> sf
                                         .handle(warehouseDispatch(), "dispatch"))
                                 .subFlowMapping(false, sf -> sf
-                                        .handle(orderItemTransformer(), "transformToSupplierFormat")
+                                        .handle(this.orderItemTransformer, "transformToSupplierFormat")
                                         .handle(externalResupply(), "orderResupply")))
                 .get();
     }
@@ -100,26 +99,20 @@ public class IntegrationJavaDsl {
     /**
      * Determines if an item is in stock based on the message payload
      */
-    private boolean isInStock(Message<?> message) {
+    private boolean isInStock(String xmlPayload) {
         try {
-            Object payload = message.getPayload();
             org.w3c.dom.Document doc;
 
-            if (payload instanceof DOMSource) {
-                doc = (org.w3c.dom.Document) ((DOMSource) payload).getNode();
-            } else if (payload instanceof String) {
-                javax.xml.parsers.DocumentBuilderFactory factory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
-                javax.xml.parsers.DocumentBuilder builder = factory.newDocumentBuilder();
-                org.xml.sax.InputSource is = new org.xml.sax.InputSource(new java.io.StringReader((String) payload));
-                doc = builder.parse(is);
-            } else {
-                throw new IllegalArgumentException("Unsupported payload type: " + payload.getClass().getName());
-            }
+            javax.xml.parsers.DocumentBuilderFactory factory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+            javax.xml.parsers.DocumentBuilder builder = factory.newDocumentBuilder();
+            org.xml.sax.InputSource is = new org.xml.sax.InputSource(new java.io.StringReader(xmlPayload));
+            doc = builder.parse(is);
 
             // Check the in-stock attribute
             boolean inStock = Boolean.parseBoolean(doc.getDocumentElement().getAttribute("in-stock"));
             return inStock;
         } catch (Exception e) {
+            // Consider adding logging here, e.g., logger.error("Failed to check stock", e);
             return false;
         }
     }
