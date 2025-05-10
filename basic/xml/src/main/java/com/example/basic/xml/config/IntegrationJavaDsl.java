@@ -13,8 +13,9 @@ import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.MessageChannels;
 import org.springframework.integration.dsl.QueueChannelSpec;
 import org.springframework.integration.handler.LoggingHandler;
+import org.springframework.integration.store.ChannelMessageStore;
+import org.springframework.integration.store.SimpleMessageStore;
 import org.springframework.integration.xml.splitter.XPathMessageSplitter;
-import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 
 /**
@@ -36,8 +37,15 @@ public class IntegrationJavaDsl {
     }
 
     @Bean
+    public ChannelMessageStore myInMemoryChannelMessageStore() {
+        // SimpleMessageStore is an in-memory, non-persistent store
+        // Good for testing or when persistence is not required but grouping is.
+        return new SimpleMessageStore();
+    }
+
+    @Bean
     public QueueChannelSpec ordersChannel() {
-        return MessageChannels.queue().wireTap("loggingChannel");
+        return MessageChannels.queue("ordersChannel", myInMemoryChannelMessageStore(), "ordersGroup").wireTap("loggingChannel");
     }
 
 
@@ -46,15 +54,16 @@ public class IntegrationJavaDsl {
         return () -> ordersChannel().getObject().receive();
     }
 
-
-
     /**
      * Main integration flow using Java DSL
      */
     @Bean
     public IntegrationFlow orderProcessingFlow() {
         return IntegrationFlow
-                .from(queueChannelMessageSource(), e -> e.poller(p -> p.fixedRate(1000)))
+                .from(queueChannelMessageSource(), e -> e.poller(p ->
+                                p.fixedRate(1000)
+                                  .maxMessagesPerPoll(5)
+                                        /*.transactional()*/))
                 .handle(this.orderItemTransformer, "transformToSupplierFormat")
                 .split(Order.class, Order::getOrderItems)
                 .<OrderItem, Boolean>route(this::isInStock, mapping -> mapping
