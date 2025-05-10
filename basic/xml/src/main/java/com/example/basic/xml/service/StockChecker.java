@@ -2,6 +2,7 @@ package com.example.basic.xml.service;
 
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -10,6 +11,7 @@ import javax.xml.transform.dom.DOMSource;
 import java.util.HashMap;
 import java.util.Map;
 
+@Component
 public class StockChecker {
     private final Map<String, Boolean> stockInventory;
 

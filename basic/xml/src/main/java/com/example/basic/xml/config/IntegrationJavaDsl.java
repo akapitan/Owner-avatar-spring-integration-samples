@@ -9,9 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.channel.QueueChannel;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.xml.splitter.XPathMessageSplitter;
-import org.springframework.messaging.Message;
 
-import javax.xml.transform.dom.DOMSource;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,30 +20,16 @@ import java.util.Map;
 public class IntegrationJavaDsl {
 
     private final OrderItemTransformer orderItemTransformer;
+    private final ExternalResupply externalResupply;
+    private final WarehouseDispatch warehouseDispatch;
+    private final StockChecker stockChecker;
 
-    public IntegrationJavaDsl(OrderItemTransformer orderItemTransformer) {
+    public IntegrationJavaDsl(OrderItemTransformer orderItemTransformer, ExternalResupply externalResupply, WarehouseDispatch warehouseDispatch, StockChecker stockChecker) {
         this.orderItemTransformer = orderItemTransformer;
+        this.externalResupply = externalResupply;
+        this.warehouseDispatch = warehouseDispatch;
+        this.stockChecker = stockChecker;
     }
-
-    @Bean
-    public StockChecker stockChecker() {
-        return new StockChecker();
-    }
-
-    @Bean
-    public WarehouseDispatch warehouseDispatch() {
-        return new WarehouseDispatch();
-    }
-
-    @Bean
-    public ExternalResupply externalResupply() {
-        return new ExternalResupply();
-    }
-
-/*    @Bean
-    public OrderItemTransformer orderItemTransformer() {
-        return new OrderItemTransformer();
-    }*/
 
     @Bean
     public QueueChannel ordersChannel() {
@@ -76,12 +60,8 @@ public class IntegrationJavaDsl {
                 .from(ordersChannel())
                 .split(orderItemSplitter())
                 .<String, Boolean>route(this::isInStock,
-                        mapping -> mapping
-                                .subFlowMapping(true, sf -> sf
-                                        .handle(warehouseDispatch(), "dispatch"))
-                                .subFlowMapping(false, sf -> sf
-                                        .handle(this.orderItemTransformer, "transformToSupplierFormat")
-                                        .handle(externalResupply(), "orderResupply")))
+                        mapping -> mapping.subFlowMapping(true, sf -> sf.handle(this.warehouseDispatch, "dispatch"))
+                                .subFlowMapping(false, sf -> sf.handle(this.orderItemTransformer, "transformToSupplierFormat").handle(this.externalResupply, "orderResupply")))
                 .get();
     }
 
