@@ -15,7 +15,6 @@ import org.springframework.integration.dsl.QueueChannelSpec;
 import org.springframework.integration.handler.LoggingHandler;
 import org.springframework.integration.store.ChannelMessageStore;
 import org.springframework.integration.store.SimpleMessageStore;
-import org.springframework.integration.xml.splitter.XPathMessageSplitter;
 import org.springframework.messaging.MessageChannel;
 
 /**
@@ -43,9 +42,11 @@ public class IntegrationJavaDsl {
         return new SimpleMessageStore();
     }
 
-    @Bean
+    @Bean(name = "ordersChannel.input")
     public QueueChannelSpec ordersChannel() {
-        return MessageChannels.queue("ordersChannel", myInMemoryChannelMessageStore(), "ordersGroup").wireTap("loggingChannel");
+        return MessageChannels.queue("ordersChannel.input", myInMemoryChannelMessageStore(), "ordersGroup")
+                .wireTap("loggingChannel")
+                ;
     }
 
 
@@ -62,19 +63,20 @@ public class IntegrationJavaDsl {
         return IntegrationFlow
                 .from(queueChannelMessageSource(), e -> e.poller(p ->
                                 p.fixedRate(1000)
-                                  .maxMessagesPerPoll(5)
+                                  .maxMessagesPerPoll(2)
                                         /*.transactional()*/))
                 .handle(this.orderItemTransformer, "transformToSupplierFormat")
                 .split(Order.class, Order::getOrderItems)
                 .<OrderItem, Boolean>route(this::isInStock, mapping -> mapping
                         .subFlowMapping(true, sf -> sf.handle(this.warehouseDispatch, "dispatch"))
-                        .subFlowMapping(false, sf -> sf.handle(this.externalResupply, "orderResupply").handle(this.externalResupply, "orderResupply")))
+                        .subFlowMapping(false, sf -> sf.handle(this.externalResupply, "orderResupply")))
                 .aggregate()
                 .handle(x -> {
                     System.out.println("Order processed: " + x.getPayload());
                     System.out.println("Headers: " + x.getHeaders());
                 })
-                .get();
+                .get()
+                ;
     }
 
     /*
@@ -85,13 +87,6 @@ public class IntegrationJavaDsl {
                 .bridge(e -> e.poller(p -> p.fixedRate(1000)))
                 .get();
     }*/
-
-    @Bean
-    public XPathMessageSplitter orderItemSplitter() {
-        XPathMessageSplitter splitter = new XPathMessageSplitter("/order/orderItem");
-        splitter.setCreateDocuments(true);
-        return splitter;
-    }
 
     /**
      * Determines if an item is in stock based on the message payload

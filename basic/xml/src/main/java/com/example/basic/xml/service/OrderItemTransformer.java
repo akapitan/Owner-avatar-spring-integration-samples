@@ -16,11 +16,6 @@ import java.io.StringReader;
 @Component
 public class OrderItemTransformer {
 
-    private static final Logger logger = LoggerFactory.getLogger(OrderItemTransformer.class);
-
-    /**
-     * Transforms an order item XML document to the format expected by the external supplier
-     */
     public Message<Order> transformToSupplierFormat(Message<String> message) throws JAXBException {
         JAXBContext context = JAXBContext.newInstance(Order.class);
         Unmarshaller unmarshaller = context.createUnmarshaller();

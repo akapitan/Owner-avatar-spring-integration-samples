@@ -10,7 +10,7 @@ public class ExternalResupply {
     private static final Logger logger = LoggerFactory.getLogger(ExternalResupply.class);
 
     public OrderItem orderResupply(OrderItem payload) {
-        logger.info("Resupply order sent to external supplier (Unknown type): " + payload.getClass().getName());
+        logger.info("Resupply order sent to external supplier with payload: " + payload);
         return payload;
     }
 }

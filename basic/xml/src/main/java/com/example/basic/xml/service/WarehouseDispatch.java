@@ -10,7 +10,7 @@ public class WarehouseDispatch {
     private static final Logger logger = LoggerFactory.getLogger(WarehouseDispatch.class);
 
     public OrderItem dispatch(OrderItem payload) {
-        logger.info("Order dispatched to warehouse for processing (Unknown type): " + payload.getClass().getName());
+        logger.info("Order dispatched to warehouse for processing with payload: " + payload);
         return payload;
     }
 }
