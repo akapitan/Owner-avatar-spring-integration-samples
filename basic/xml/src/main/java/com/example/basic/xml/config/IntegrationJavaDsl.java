@@ -69,6 +69,11 @@ public class IntegrationJavaDsl {
                 .<OrderItem, Boolean>route(this::isInStock, mapping -> mapping
                         .subFlowMapping(true, sf -> sf.handle(this.warehouseDispatch, "dispatch"))
                         .subFlowMapping(false, sf -> sf.handle(this.externalResupply, "orderResupply").handle(this.externalResupply, "orderResupply")))
+                .aggregate()
+                .handle(x -> {
+                    System.out.println("Order processed: " + x.getPayload());
+                    System.out.println("Headers: " + x.getHeaders());
+                })
                 .get();
     }
 

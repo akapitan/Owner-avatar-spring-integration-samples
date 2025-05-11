@@ -142,7 +142,7 @@ public class IntegrationJavaConfig {
     }
 
     @ServiceActivator(inputChannel = "warehouseDispatchChannel")
-    public void dispatchOrder(Object payload) {
+    public void dispatchOrder(OrderItem payload) {
         warehouseDispatch().dispatch(payload);
     }
 
