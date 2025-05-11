@@ -6,17 +6,21 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.jdbc.BeanPropertySqlParameterSourceFactory;
+import org.springframework.integration.jdbc.ExpressionEvaluatingSqlParameterSourceFactory;
+import org.springframework.integration.jdbc.JdbcOutboundGateway;
 import org.springframework.integration.jdbc.SqlParameterSourceFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
+import org.springframework.messaging.MessageHandler;
 
 import javax.sql.DataSource;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
+import java.util.Map;
 
-@Configuration
+@Configuration(proxyBeanMethods = false)
 public class JdbcIntegrationConfig {
 
     @Bean
@@ -29,18 +33,37 @@ public class JdbcIntegrationConfig {
         return new DataSourceTransactionManager(dataSource);
     }
 
+/*
     @Bean
     public SqlParameterSourceFactory parameterSourceFactory() {
         return new BeanPropertySqlParameterSourceFactory();
     }
+*/
 
     @Bean
-    public IntegrationFlow findPersonFlow(JdbcTemplate jdbcTemplate) {
+    public MessageHandler jdbcOutboundGateway(DataSource dataSource) {
+        JdbcOutboundGateway gateway = new JdbcOutboundGateway(dataSource,
+                null, "SELECT * FROM person WHERE LOWER(first_name) LIKE LOWER(:name)");
+        gateway.setReplySqlParameterSourceFactory(new BeanPropertySqlParameterSourceFactory());
+        gateway.setRowMapper(new PersonRowMapper());
+
+        ExpressionEvaluatingSqlParameterSourceFactory parameterFactory =
+                new ExpressionEvaluatingSqlParameterSourceFactory();
+        parameterFactory.setParameterExpressions(Map.of(
+                "name", "'%' + payload + '%'"
+        ));
+        gateway.setReplySqlParameterSourceFactory(parameterFactory);
+        return gateway;
+    }
+
+    @Bean
+    public IntegrationFlow findPersonFlow(MessageHandler jdbcOutboundGateway) {
         return IntegrationFlow.from("findPersonChannel")
-                .<String>handle((p, h) -> {
+                /*.<String>handle((p, h) -> {
                     String query = "SELECT * FROM person WHERE LOWER(first_name) LIKE LOWER(?)";
                     return jdbcTemplate.query(query, new PersonRowMapper(), "%" + p + "%");
-                })
+                })*/
+                .handle(jdbcOutboundGateway)
                 .get();
     }
 

@@ -22,8 +22,7 @@ public class XmlIntegrationApplication {
 
         // Read sample order XML
         String orderXml = readSampleXml();
-//        logger.info("Order XML loaded: {}", orderXml);
-
+        Thread.sleep(1000);
             // Get the order channel and send the order
             for (int i = 0; i < 10; i++) {
                 ordersProcessingGateway.createOrder(orderXml);

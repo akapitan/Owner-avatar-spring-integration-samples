@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-@Configuration
+@Configuration(proxyBeanMethods = false)
 @EnableTransactionManagement
 public class IntegrationJavaConfiguration {
 
@@ -31,8 +31,8 @@ public class IntegrationJavaConfiguration {
     @Bean
     @InboundChannelAdapter(channel = "personPollingChannel",
             poller = @Poller(fixedDelay = "5000"))
-    public JpaPollingChannelAdapter jpaPollingChannelAdapter(EntityManagerFactory entityManagerFactory) {
-        return new JpaPollingChannelAdapter(jpaInboundExecutor(entityManagerFactory));
+    public JpaPollingChannelAdapter jpaPollingChannelAdapter(JpaExecutor jpaInboundExecutor) {
+        return new JpaPollingChannelAdapter(jpaInboundExecutor);
     }
 
     @Bean

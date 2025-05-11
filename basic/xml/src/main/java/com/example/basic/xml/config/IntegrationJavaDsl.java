@@ -6,13 +6,13 @@ import com.example.basic.xml.service.ExternalResupply;
 import com.example.basic.xml.service.OrderItemTransformer;
 import com.example.basic.xml.service.StockChecker;
 import com.example.basic.xml.service.WarehouseDispatch;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.integration.channel.QueueChannel;
 import org.springframework.integration.core.MessageSource;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.MessageChannels;
-import org.springframework.integration.dsl.QueueChannelSpec;
-import org.springframework.integration.handler.LoggingHandler;
 import org.springframework.integration.store.ChannelMessageStore;
 import org.springframework.integration.store.SimpleMessageStore;
 import org.springframework.messaging.MessageChannel;
@@ -43,15 +43,14 @@ public class IntegrationJavaDsl {
     }
 
     @Bean(name = "ordersChannel.input")
-    public QueueChannelSpec ordersChannel(ChannelMessageStore myInMemoryChannelMessageStore) {
+    public QueueChannel ordersChannel(ChannelMessageStore myInMemoryChannelMessageStore, @Qualifier("loggingChannel") MessageChannel loggingChannel) {
         return MessageChannels.queue("ordersChannel.input", myInMemoryChannelMessageStore, "ordersGroup")
-                .wireTap("loggingChannel");
+                .wireTap(loggingChannel).getObject();
     }
 
-
     @Bean
-    public MessageSource queueChannelMessageSource(QueueChannelSpec ordersChannel) {
-        return () -> ordersChannel.getObject().receive();
+    public MessageSource queueChannelMessageSource(QueueChannel ordersChannel) {
+        return ordersChannel::receive;
     }
 
     /**
@@ -94,28 +93,4 @@ public class IntegrationJavaDsl {
         return this.stockChecker.checkStock(orderItem.getIsbn());
     }
 
-
-    /**
-     * Logging channel for debugging purposes
-     * @return
-     */
-    @Bean
-    public MessageChannel loggingChannel() {
-        return MessageChannels.direct().getObject();
-    }
-
-    @Bean
-    public LoggingHandler loggingHandler() {
-        LoggingHandler adapter = new LoggingHandler(LoggingHandler.Level.INFO);
-        adapter.setLoggerName("ordersChannelLogger");
-        adapter.setLogExpressionString("'Incoming message on ordersChannel: ' + payload");
-        return adapter;
-    }
-
-    @Bean
-    public IntegrationFlow loggingFlow(LoggingHandler loggingHandler) {
-        return IntegrationFlow.from("loggingChannel")
-                .handle(loggingHandler)
-                .get();
-    }
 }

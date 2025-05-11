@@ -21,7 +21,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
-@Configuration
+@Configuration(proxyBeanMethods = false)
 @EnableTransactionManagement
 public class IntegrationDSLConfig {
 
