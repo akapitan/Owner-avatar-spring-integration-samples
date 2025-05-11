@@ -20,7 +20,7 @@ import org.springframework.messaging.MessageChannel;
 /**
  * Spring Integration configuration using Java DSL
  */
-@Configuration
+@Configuration(proxyBeanMethods = false)
 public class IntegrationJavaDsl {
 
     private final OrderItemTransformer orderItemTransformer;
@@ -43,26 +43,25 @@ public class IntegrationJavaDsl {
     }
 
     @Bean(name = "ordersChannel.input")
-    public QueueChannelSpec ordersChannel() {
-        return MessageChannels.queue("ordersChannel.input", myInMemoryChannelMessageStore(), "ordersGroup")
-                .wireTap("loggingChannel")
-                ;
+    public QueueChannelSpec ordersChannel(ChannelMessageStore myInMemoryChannelMessageStore) {
+        return MessageChannels.queue("ordersChannel.input", myInMemoryChannelMessageStore, "ordersGroup")
+                .wireTap("loggingChannel");
     }
 
 
     @Bean
-    public MessageSource queueChannelMessageSource() {
-        return () -> ordersChannel().getObject().receive();
+    public MessageSource queueChannelMessageSource(QueueChannelSpec ordersChannel) {
+        return () -> ordersChannel.getObject().receive();
     }
 
     /**
      * Main integration flow using Java DSL
      */
     @Bean
-    public IntegrationFlow orderProcessingFlow() {
+    public IntegrationFlow orderProcessingFlow(MessageSource queueChannelMessageSource) {
         return IntegrationFlow
-                .from(queueChannelMessageSource(), e -> e.poller(p ->
-                                p.fixedRate(1000)
+                .from(queueChannelMessageSource, e -> e.poller(p ->
+                                p.fixedRate(5000)
                                   .maxMessagesPerPoll(2)
                                         /*.transactional()*/))
                 .handle(this.orderItemTransformer, "transformToSupplierFormat")
