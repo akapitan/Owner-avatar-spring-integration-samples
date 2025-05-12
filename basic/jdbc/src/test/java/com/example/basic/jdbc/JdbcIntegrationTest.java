@@ -5,7 +5,6 @@ import com.example.basic.jdbc.gateway.PersonGateway;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
@@ -14,24 +13,24 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
-public class JdbcIntegrationTest {
+class JdbcIntegrationTest {
 
     @Autowired
     private PersonGateway personGateway;
 
     @Test
-    public void testFindPersonByName() {
+    void testFindPersonByName() {
         List<Person> persons = personGateway.findByName("John");
 
         assertNotNull(persons);
         assertEquals(1, persons.size());
-        assertEquals("John", persons.get(0).getFirstName());
-        assertEquals("Doe", persons.get(0).getLastName());
-        assertEquals(42, persons.get(0).getAge());
+        assertEquals("John", persons.getFirst().getFirstName());
+        assertEquals("Doe", persons.getFirst().getLastName());
+        assertEquals(42, persons.getFirst().getAge());
     }
 
     @Test
-    public void testCreatePerson() {
+    void testCreatePerson() {
         Person personToCreate = new Person("Test", "User", 30);
 
         Person createdPerson = personGateway.createPerson(personToCreate);
@@ -45,11 +44,11 @@ public class JdbcIntegrationTest {
         // Verify the person can be found after creation
         List<Person> foundPersons = personGateway.findByName("Test");
         assertEquals(1, foundPersons.size());
-        assertEquals(createdPerson.getId(), foundPersons.get(0).getId());
+        assertEquals(createdPerson.getId(), foundPersons.getFirst().getId());
     }
 
     @Test
-    public void testFindByPartialName() {
+    void testFindByPartialName() {
         // Should find both John and Jane
         List<Person> persons = personGateway.findByName("J");
 

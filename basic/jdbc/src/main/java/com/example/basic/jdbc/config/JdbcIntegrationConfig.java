@@ -8,7 +8,6 @@ import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.jdbc.BeanPropertySqlParameterSourceFactory;
 import org.springframework.integration.jdbc.ExpressionEvaluatingSqlParameterSourceFactory;
 import org.springframework.integration.jdbc.JdbcOutboundGateway;
-import org.springframework.integration.jdbc.SqlParameterSourceFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -33,13 +32,6 @@ public class JdbcIntegrationConfig {
         return new DataSourceTransactionManager(dataSource);
     }
 
-/*
-    @Bean
-    public SqlParameterSourceFactory parameterSourceFactory() {
-        return new BeanPropertySqlParameterSourceFactory();
-    }
-*/
-
     @Bean
     public MessageHandler jdbcOutboundGateway(DataSource dataSource) {
         JdbcOutboundGateway gateway = new JdbcOutboundGateway(dataSource,
@@ -53,6 +45,7 @@ public class JdbcIntegrationConfig {
                 "name", "'%' + payload + '%'"
         ));
         gateway.setReplySqlParameterSourceFactory(parameterFactory);
+        gateway.setMaxRows(20);
         return gateway;
     }
 
