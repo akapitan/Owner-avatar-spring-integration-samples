@@ -6,8 +6,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.integration.IntegrationMessageHeaderAccessor;
 import org.springframework.integration.annotation.Gateway;
 import org.springframework.integration.annotation.MessagingGateway;
+import org.springframework.messaging.handler.annotation.Header;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -22,25 +24,18 @@ public class XmlIntegrationApplication {
 
         // Read sample order XML
         String orderXml = readSampleXml();
-        Thread.sleep(1000);
-            // Get the order channel and send the order
-            for (int i = 0; i < 10; i++) {
-                ordersProcessingGateway.createOrder(orderXml);
-            logger.info("Order sent to channel");
-            logger.info("Order processing flow started...");
-            Thread.sleep(100);
-            }
-
-            // Keep the application running for a while to allow message flow completion
-            Thread.sleep(20000);
-
+        // Get the order channel and send the order
+        for (int i = 0; i < 10; i++) {
+            ordersProcessingGateway.createOrder(orderXml, i);
+            logger.info("Order sent to channel with priority: {}", i);
+        }
     }
 
-    @MessagingGateway
+    @MessagingGateway()
     public interface OrdersProcessingGateway {
 
         @Gateway(requestChannel = "ordersChannel.input")
-        void createOrder(String xmlString);
+        void createOrder(String xmlString, @Header(IntegrationMessageHeaderAccessor.PRIORITY) int priority);
 
     }
 

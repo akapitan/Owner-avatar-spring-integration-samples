@@ -9,12 +9,9 @@ import com.example.basic.xml.service.WarehouseDispatch;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.integration.channel.QueueChannel;
-import org.springframework.integration.core.MessageSource;
+import org.springframework.integration.channel.PriorityChannel;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.MessageChannels;
-import org.springframework.integration.store.ChannelMessageStore;
-import org.springframework.integration.store.SimpleMessageStore;
 import org.springframework.messaging.MessageChannel;
 
 /**
@@ -35,31 +32,26 @@ public class IntegrationJavaDsl {
         this.stockChecker = stockChecker;
     }
 
-    @Bean
+/*    @Bean
     public ChannelMessageStore myInMemoryChannelMessageStore() {
         // SimpleMessageStore is an in-memory, non-persistent store
         // Good for testing or when persistence is not required but grouping is.
-        return new SimpleMessageStore();
-    }
+        return new PriorityCapableChannelMessageStore() {
+        };
+    }*/
 
     @Bean(name = "ordersChannel.input")
-    public QueueChannel ordersChannel(ChannelMessageStore myInMemoryChannelMessageStore, @Qualifier("loggingChannel") MessageChannel loggingChannel) {
-        return MessageChannels.queue("ordersChannel.input", myInMemoryChannelMessageStore, "ordersGroup")
-                .wireTap(loggingChannel).getObject();
-    }
-
-    @Bean
-    public MessageSource queueChannelMessageSource(QueueChannel ordersChannel) {
-        return ordersChannel::receive;
+    public PriorityChannel ordersChannel(@Qualifier("loggingChannel") MessageChannel loggingChannel) {
+        return MessageChannels.priority("ordersChannel.input").wireTap(loggingChannel).getObject();
     }
 
     /**
      * Main integration flow using Java DSL
      */
     @Bean
-    public IntegrationFlow orderProcessingFlow(MessageSource queueChannelMessageSource) {
+    public IntegrationFlow orderProcessingFlow(PriorityChannel ordersChannel) {
         return IntegrationFlow
-                .from(queueChannelMessageSource, e -> e.poller(p ->
+                .fromSupplier(ordersChannel::receive, e -> e.poller(p ->
                                 p.fixedRate(5000)
                                   .maxMessagesPerPoll(2)
                                         /*.transactional()*/))
@@ -73,8 +65,7 @@ public class IntegrationJavaDsl {
                     System.out.println("Order processed: " + x.getPayload());
                     System.out.println("Headers: " + x.getHeaders());
                 })
-                .get()
-                ;
+                .get();
     }
 
     /*

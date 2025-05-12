@@ -1,8 +1,6 @@
 package com.example.basic.xml.service;
 
 import com.example.basic.xml.domain.Order;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
