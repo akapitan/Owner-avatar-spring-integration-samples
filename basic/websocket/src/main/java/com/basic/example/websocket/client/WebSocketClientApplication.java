@@ -4,13 +4,11 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.integration.annotation.ServiceActivator;
-import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.config.EnableIntegration;
+import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.handler.LoggingHandler;
 import org.springframework.integration.websocket.ClientWebSocketContainer;
 import org.springframework.integration.websocket.inbound.WebSocketInboundChannelAdapter;
-import org.springframework.messaging.MessageChannel;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 
 /**
@@ -34,23 +32,10 @@ public class WebSocketClientApplication {
     }
 
     @Bean
-    public MessageChannel webSocketInputChannel() {
-        return new DirectChannel();
-    }
-
-    @Bean
-    public WebSocketInboundChannelAdapter webSocketInboundChannelAdapter() {
-        WebSocketInboundChannelAdapter adapter =
-                new WebSocketInboundChannelAdapter(clientWebSocketContainer());
-        adapter.setOutputChannel(webSocketInputChannel());
-        return adapter;
-    }
-
-    @Bean
-    @ServiceActivator(inputChannel = "webSocketInputChannel")
-    public LoggingHandler loggingHandler() {
-        LoggingHandler handler = new LoggingHandler(LoggingHandler.Level.INFO);
-        handler.setLoggerName("wsLog");
-        return handler;
+    public IntegrationFlow webSocketFlow() {
+        WebSocketInboundChannelAdapter adapter = new WebSocketInboundChannelAdapter(clientWebSocketContainer());
+        return IntegrationFlow.from(adapter)
+                .log(LoggingHandler.Level.INFO, "wsLog")
+                .nullChannel();
     }
 }

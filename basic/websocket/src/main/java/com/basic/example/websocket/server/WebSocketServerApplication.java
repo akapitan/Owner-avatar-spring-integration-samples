@@ -1,33 +1,22 @@
 package com.basic.example.websocket.server;
 
-import java.text.DateFormat;
-import java.util.Date;
-import java.util.concurrent.Executors;
-import java.util.Collections;
-
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.integration.annotation.InboundChannelAdapter;
-import org.springframework.integration.annotation.Poller;
-import org.springframework.integration.annotation.ServiceActivator;
-import org.springframework.integration.annotation.Transformer;
-import org.springframework.integration.channel.DirectChannel;
-import org.springframework.integration.channel.ExecutorChannel;
-import org.springframework.integration.channel.PublishSubscribeChannel;
-import org.springframework.integration.core.MessageSource;
+import org.springframework.integration.core.GenericTransformer;
+import org.springframework.integration.dsl.IntegrationFlow;
+import org.springframework.integration.dsl.Pollers;
 import org.springframework.integration.handler.LoggingHandler;
-import org.springframework.integration.splitter.DefaultMessageSplitter;
-import org.springframework.integration.transformer.AbstractPayloadTransformer;
-import org.springframework.integration.transformer.HeaderEnricher;
-import org.springframework.integration.transformer.support.ExpressionEvaluatingHeaderValueMessageProcessor;
 import org.springframework.integration.websocket.ServerWebSocketContainer;
 import org.springframework.integration.websocket.outbound.WebSocketOutboundMessageHandler;
-import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.MessageHandler;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.support.GenericMessage;
+
+import java.text.DateFormat;
+import java.util.Collection;
+import java.util.Date;
+import java.util.concurrent.Executors;
 
 /**
  * WebSocket Server Application using Spring Integration Java config
@@ -47,7 +36,7 @@ public class WebSocketServerApplication {
         return new ServerWebSocketContainer("/time").withSockJs();
     }
 
-    @Bean
+/*    @Bean
     @InboundChannelAdapter(value = "splitChannel", poller = @Poller(fixedDelay = "1000", maxMessagesPerPoll = "1"))
     public MessageSource<?> webSocketSessionsMessageSource() {
         return () -> new GenericMessage<>(serverWebSocketContainer().getSessions().keySet().iterator());
@@ -75,7 +64,7 @@ public class WebSocketServerApplication {
     @Transformer(inputChannel = "headerEnricherChannel", outputChannel = "transformChannel")
     public HeaderEnricher headerEnricher() {
         return new HeaderEnricher(Collections.singletonMap(SimpMessageHeaderAccessor.SESSION_ID_HEADER,
-                new ExpressionEvaluatingHeaderValueMessageProcessor<>("payload", null)));
+                new ExpressionEvaluatingHeaderValueMessageProcessor<>("payload", String.class)));
     }
 
     @Bean
@@ -89,6 +78,7 @@ public class WebSocketServerApplication {
         return new AbstractPayloadTransformer<Object, Object>() {
             @Override
             protected Object transformPayload(Object payload) {
+                System.out.println(payload);
                 return DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.DEFAULT).format(new Date());
             }
         };
@@ -113,5 +103,34 @@ public class WebSocketServerApplication {
         loggingHandler.setLogExpressionString(
                 "'The time ' + payload + ' has been sent to the WebSocketSession ' + headers.simpSessionId");
         return loggingHandler;
+    }*/
+
+    @Bean
+    public IntegrationFlow webSocketFlow() {
+        return IntegrationFlow.from(() -> new GenericMessage<>(serverWebSocketContainer().getSessions().keySet().toArray()),
+                        e -> e.poller(Pollers.fixedDelay(1000).maxMessagesPerPoll(1)))
+                .split()
+//                .log(LoggingHandler.Level.INFO, "wsLog-headers", "headers")
+                .channel(c -> c.executor(Executors.newVirtualThreadPerTaskExecutor()))
+                .enrichHeaders(h -> h.headerFunction(SimpMessageHeaderAccessor.SESSION_ID_HEADER,
+                        m -> m.getPayload().toString()))
+                .transform((GenericTransformer<Object, Object>) _ ->
+                        DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.DEFAULT).format(new Date()))
+                .publishSubscribeChannel(pubsub -> pubsub
+                        .subscribe(subflow -> subflow
+                                .handle(new WebSocketOutboundMessageHandler(serverWebSocketContainer())))
+//                        .subscribe(subflow -> subflow
+//                                .log(LoggingHandler.Level.INFO, "wsLog",
+//                                        "'The time ' + payload + ' has been sent to the WebSocketSession ' + headers.simpSessionId").nullChannel())
+                        .subscribe(subflow -> subflow
+                                .aggregate(/*aggregator -> aggregator
+                                        .correlationStrategy(new HeaderAttributeCorrelationStrategy("correlationId"))
+                                        .releaseStrategy(new SimpleSequenceSizeReleaseStrategy())
+                                        .expireGroupsUponCompletion(true)
+                                        .sendPartialResultOnExpiry(true)
+                                        .expireGroupsUponTimeout(true)*/)
+                                .log(LoggingHandler.Level.INFO, "wsLog-aggregated", m -> "Aggregated size: " + ((Collection<?>) m.getPayload()).size())
+                                .nullChannel()))
+                .get();
     }
 }
