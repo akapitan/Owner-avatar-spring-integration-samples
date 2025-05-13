@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Time Sample</title>
+    <script src="/sockjs.js"></script>
+    <script>
+        var sock = new SockJS('/time');
+
+        sock.onopen = function () {
+            console.log('WebSocket connection opened');
+        };
+
+        sock.onmessage = function (e) {
+            console.log('Received message: ', e.data);
+            document.getElementById('time').textContent = e.data;
+        };
+
+        sock.onclose = function () {
+            console.log('WebSocket connection closed');
+        };
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        #time {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+<h1>Current Server Time</h1>
+<div id="time">Waiting for server time...</div>
+</body>
+</html>
