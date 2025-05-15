@@ -4,6 +4,7 @@ import com.example.basic.model.Delivery;
 import com.example.basic.model.Dessert;
 import com.example.basic.model.Dish;
 import com.example.basic.model.Drink;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.dsl.IntegrationFlow;
@@ -16,7 +17,7 @@ import org.springframework.messaging.MessageChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-@Configuration
+@Configuration(proxyBeanMethods = false)
 public class IntegrationFlowConfiguration {
 
     private static final ExecutorService EXECUTOR_SERVICE = Executors.newVirtualThreadPerTaskExecutor();
@@ -50,63 +51,60 @@ public class IntegrationFlowConfiguration {
 
     @Bean
     public MessageChannel outputChannel() {
-        return MessageChannels.direct("output-flow"/*, EXECUTOR_SERVICE*/).getObject();
+        return MessageChannels.publishSubscribe("output-flow"/*, EXECUTOR_SERVICE*/).getObject();
     }
 
-/*    @Bean("orders.input")
-    public MessageChannel orderChannel() {
-        return MessageChannels.direct("output-flow"*//*, EXECUTOR_SERVICE*//*).getObject();
-    }*/
-
     @Bean
-    IntegrationFlow orders() {
+    IntegrationFlow orders(@Qualifier("drinkChannel") MessageChannel drinkChannel,
+                           @Qualifier("dishChannel") MessageChannel dishChannel,
+                           @Qualifier("dessertChannel") MessageChannel dessertChannel) {
         return f -> f
                 .routeToRecipients(c ->
-                        c.recipient(drinkChannel())
-                                .recipient(dishChannel())
-                                .recipient(dessertChannel()));
+                        c.recipient(drinkChannel)
+                                .recipient(dishChannel)
+                                .recipient(dessertChannel));
     }
 
 
     @Bean
-    public IntegrationFlow drinkFlow() {
+    public IntegrationFlow drinkFlow(@Qualifier("drinkChannel") MessageChannel drinkChannel, @Qualifier("outputChannel") MessageChannel outputChannel) {
         return IntegrationFlow
-                .from(drinkChannel())
+                .from(drinkChannel)
                 .split("payload.drink")
-                .handle(kitchenService, "prepareDrink")
-                .channel(outputChannel())
+                .handle(Drink.class, (payload, _) -> kitchenService.prepareDrink(payload))
+                .channel(outputChannel)
                 .get();
     }
 
     @Bean
-    public IntegrationFlow dishFlow() {
+    public IntegrationFlow dishFlow(@Qualifier("dishChannel") MessageChannel dishChannel, @Qualifier("outputChannel") MessageChannel outputChannel) {
         return IntegrationFlow
-                .from(dishChannel())
+                .from(dishChannel)
                 .split("payload.dish")
-                .handle(kitchenService, "prepareDish")
-                .channel(outputChannel())
+                .handle(Dish.class, (payload, _) -> kitchenService.prepareDish(payload))
+                .channel(outputChannel)
                 .get();
     }
 
     @Bean
-    public IntegrationFlow dessertFlow() {
+    public IntegrationFlow dessertFlow(@Qualifier("dessertChannel") MessageChannel dessertChannel, @Qualifier("outputChannel") MessageChannel outputChannel) {
         return IntegrationFlow
-                .from(dessertChannel())
+                .from(dessertChannel)
                 .split("payload.dessert")
-                .handle(kitchenService, "prepareDessert")
-                .channel(outputChannel())
+                .handle(Dessert.class, (payload, _) -> kitchenService.prepareDessert(payload))
+                .channel(outputChannel)
                 .get();
     }
 
     @Bean
-    public IntegrationFlow resultFlow() {
+    public IntegrationFlow resultFlow(MessageChannel outputChannel) {
         return IntegrationFlow
-                .from(outputChannel())
+                .from(outputChannel)
                 .aggregate(aggregator -> aggregator
                         .outputProcessor(objects -> {
                             Delivery delivery = new Delivery();
-                            SimpleMessageGroup objects1 = (SimpleMessageGroup) objects;
-                            for (Message<?> o : objects1.getMessages()) {
+                            SimpleMessageGroup simpleMessageGroupObjects = (SimpleMessageGroup) objects;
+                            for (Message<?> o : simpleMessageGroupObjects.getMessages()) {
                                 Object payload = o.getPayload();
                                 switch (payload) {
                                     case Drink drink -> {
