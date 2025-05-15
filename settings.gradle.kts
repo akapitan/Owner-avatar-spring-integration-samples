@@ -19,3 +19,4 @@ fun includeSubprojectsUnder(parent: String) {
 
 // Scan these folders for submodules
 includeSubprojectsUnder("basic")
+includeSubprojectsUnder("advanced")
