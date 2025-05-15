@@ -12,6 +12,8 @@ import org.springframework.boot.autoconfigure.integration.IntegrationAutoConfigu
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.integration.annotation.Gateway;
+import org.springframework.integration.annotation.MessagingGateway;
 import org.springframework.integration.channel.QueueChannel;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.messaging.Message;
@@ -25,7 +27,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(SpringExtension.class)
-@Import({IntegrationFlowConfiguration.class, KitchenService.class, RestaurantGateway.class})
+@Import({IntegrationFlowConfiguration.class, KitchenService.class, RestaurantGateway.class, IntegrationFlowConfigurationTest2.Config.RestaurantTestGateway.class})
 @ImportAutoConfiguration(IntegrationAutoConfiguration.class)
 class IntegrationFlowConfigurationTest2 {
 
@@ -33,15 +35,23 @@ class IntegrationFlowConfigurationTest2 {
     private RestaurantGateway restaurantGateway;
 
     @Autowired
+    private Config.RestaurantTestGateway testGateway;
+
+    @Autowired
     private QueueChannel testOutputChannel;
+
+    @Test
+    void ordersFlow_shouldProperlySplitAndProcessOrder0() {
+        Message<?> message = this.testGateway.placeOrder(getOrder());
+        System.out.println("test");
+        System.out.println(message.getPayload());
+
+    }
 
     @Test
     void ordersFlow_shouldProperlySplitAndProcessOrder() {
         // Given
-        Order order = new Order(1,
-                new Dessert(1, "Ice Cream"),
-                new Dish(1, "Pizza"),
-                new Drink(1, "Coke"));
+        Order order = getOrder();
         List results = new ArrayList<>();
         // When
         restaurantGateway.placeOrder(order);
@@ -66,13 +76,18 @@ class IntegrationFlowConfigurationTest2 {
         );
     }
 
-    @Test
-    void ordersFlow_shouldProperlySplitAndProcessOrder2() {
-        // Given
-        Order order1 = new Order(1,
+    private static Order getOrder() {
+        Order order = new Order(1,
                 new Dessert(1, "Ice Cream"),
                 new Dish(1, "Pizza"),
                 new Drink(1, "Coke"));
+        return order;
+    }
+
+    @Test
+    void ordersFlow_shouldProperlySplitAndProcessOrder2() {
+        // Given
+        Order order1 = getOrder();
         Order order2 = new Order(2,
                 new Dessert(2, "Custard"),
                 new Dish(2, "Pizza"),
@@ -124,6 +139,13 @@ class IntegrationFlowConfigurationTest2 {
         @Bean
         IntegrationFlow bridgeFlow(MessageChannel outputChannel, PollableChannel testOutputChannel) {
             return IntegrationFlow.from(outputChannel).channel(testOutputChannel).get();
+        }
+
+        @MessagingGateway
+        public interface RestaurantTestGateway {
+
+            @Gateway(requestChannel = "orders.input")
+            Message<?> placeOrder(Order order);
         }
 
     }
