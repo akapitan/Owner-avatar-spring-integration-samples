@@ -16,8 +16,9 @@ import org.springframework.integration.annotation.Gateway;
 import org.springframework.integration.annotation.MessagingGateway;
 import org.springframework.integration.channel.QueueChannel;
 import org.springframework.integration.dsl.IntegrationFlow;
+import org.springframework.integration.dsl.MessageChannelSpec;
+import org.springframework.integration.dsl.PublishSubscribeChannelSpec;
 import org.springframework.messaging.Message;
-import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.PollableChannel;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -39,14 +40,6 @@ class IntegrationFlowConfigurationTest2 {
 
     @Autowired
     private QueueChannel testOutputChannel;
-
-    @Test
-    void ordersFlow_shouldProperlySplitAndProcessOrder0() {
-        Message<?> message = this.testGateway.placeOrder(getOrder());
-        System.out.println("test");
-        System.out.println(message.getPayload());
-
-    }
 
     @Test
     void ordersFlow_shouldProperlySplitAndProcessOrder() {
@@ -137,7 +130,7 @@ class IntegrationFlowConfigurationTest2 {
         }
 
         @Bean
-        IntegrationFlow bridgeFlow(MessageChannel outputChannel, PollableChannel testOutputChannel) {
+        IntegrationFlow bridgeFlow(PublishSubscribeChannelSpec outputChannel, PollableChannel testOutputChannel) {
             return IntegrationFlow.from(outputChannel).channel(testOutputChannel).get();
         }
 

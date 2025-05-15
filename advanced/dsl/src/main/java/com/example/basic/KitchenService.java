@@ -25,15 +25,15 @@ public class KitchenService {
         return drink;
     }
 
-    public Dish prepareDish(Dish dish) {
-        Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
-        LOG.info("Preparing dish {} for order #{}:{} ", dishCounter.incrementAndGet(), dish.dishName(), dish.orderNumber());
-        return dish;
-    }
-
     public Dessert prepareDessert(Dessert dessert) {
         Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
         LOG.info("Preparing dessert {} for order #{}:{} ", dessertCounter.incrementAndGet(), dessert.dessertName(), dessert.orderNumber());
         return dessert;
+    }
+
+    public Dish prepareDish(Dish dish) {
+        Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
+        LOG.info("Preparing dish {} for order #{}:{} ", dishCounter.incrementAndGet(), dish.dishName(), dish.orderNumber());
+        return dish;
     }
 }
