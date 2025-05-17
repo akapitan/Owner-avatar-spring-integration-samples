@@ -9,11 +9,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.integration.annotation.IntegrationComponentScan;
+import org.springframework.integration.config.EnableIntegration;
 
 import java.util.List;
 import java.util.Random;
 
 @SpringBootApplication
+@EnableIntegration
+@IntegrationComponentScan
 public class DslApplication {
 
     private static final Logger LOG = LoggerFactory.getLogger(DslApplication.class);

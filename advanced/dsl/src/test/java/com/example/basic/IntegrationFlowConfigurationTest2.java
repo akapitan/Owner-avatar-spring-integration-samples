@@ -4,6 +4,7 @@ import com.example.basic.model.Dessert;
 import com.example.basic.model.Dish;
 import com.example.basic.model.Drink;
 import com.example.basic.model.Order;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,14 +13,11 @@ import org.springframework.boot.autoconfigure.integration.IntegrationAutoConfigu
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.integration.annotation.Gateway;
-import org.springframework.integration.annotation.MessagingGateway;
 import org.springframework.integration.channel.QueueChannel;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.MessageChannelSpec;
-import org.springframework.integration.dsl.PublishSubscribeChannelSpec;
+import org.springframework.integration.test.context.SpringIntegrationTest;
 import org.springframework.messaging.Message;
-import org.springframework.messaging.PollableChannel;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.ArrayList;
@@ -28,18 +26,22 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(SpringExtension.class)
-@Import({IntegrationFlowConfiguration.class, KitchenService.class, RestaurantGateway.class, IntegrationFlowConfigurationTest2.Config.RestaurantTestGateway.class})
+@Import({IntegrationFlowConfiguration.class, KitchenService.class, RestaurantGateway.class})
 @ImportAutoConfiguration(IntegrationAutoConfiguration.class)
+@SpringIntegrationTest
+//@SpringBootTest
 class IntegrationFlowConfigurationTest2 {
 
     @Autowired
     private RestaurantGateway restaurantGateway;
 
     @Autowired
-    private Config.RestaurantTestGateway testGateway;
-
-    @Autowired
     private QueueChannel testOutputChannel;
+
+    @BeforeEach
+    void setUp() {
+        this.testOutputChannel.clear();
+    }
 
     @Test
     void ordersFlow_shouldProperlySplitAndProcessOrder() {
@@ -96,8 +98,7 @@ class IntegrationFlowConfigurationTest2 {
         restaurantGateway.placeOrder(order3);
 
         for (int i = 0; i < 9; i++) {
-            Message<?> result = testOutputChannel.receive(5000);
-            results.add(result);
+            results.add(this.testOutputChannel.receive(5000));
         }
         System.out.println(results);
         // Then
@@ -129,16 +130,14 @@ class IntegrationFlowConfigurationTest2 {
             return new QueueChannel(12);
         }
 
-        @Bean
+/*        @Bean
         IntegrationFlow bridgeFlow(PublishSubscribeChannelSpec outputChannel, PollableChannel testOutputChannel) {
             return IntegrationFlow.from(outputChannel).channel(testOutputChannel).get();
-        }
+        }*/
 
-        @MessagingGateway
-        public interface RestaurantTestGateway {
-
-            @Gateway(requestChannel = "orders.input")
-            Message<?> placeOrder(Order order);
+        @Bean
+        public IntegrationFlow wireTapFlow(MessageChannelSpec outputChannel) {
+            return IntegrationFlow.from(outputChannel).wireTap(testOutputChannel()).get();
         }
 
     }

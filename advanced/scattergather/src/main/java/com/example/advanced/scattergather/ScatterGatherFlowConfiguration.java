@@ -5,11 +5,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.integration.dsl.ExecutorChannelSpec;
 import org.springframework.integration.dsl.IntegrationFlow;
-import org.springframework.integration.dsl.MessageChannels;
-import org.springframework.integration.dsl.Pollers;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -17,35 +15,30 @@ import java.util.concurrent.TimeUnit;
 class ScatterGatherFlowConfiguration {
 
     private static final Logger LOG = LoggerFactory.getLogger(ScatterGatherFlowConfiguration.class);
-
-    @Bean
-    ExecutorChannelSpec processingChannel() {
-        return MessageChannels.executor(Executors.newVirtualThreadPerTaskExecutor());
-    }
+    private static final ExecutorService EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
 
     @Bean
     IntegrationFlow scatterGather() {
         return f -> f
                 .scatterGather(
                         scatterer -> scatterer
-                                .applySequence(true)
-                                .recipientFlow(m -> true, sf -> sf
-                                        .channel(processingChannel())
-                                        .handle((p, h) -> {
+                                .recipientFlow(sf -> sf
+                                        .channel(c -> c.executor(EXECUTOR))
+                                        .<String>handle((p, h) -> {
                                             LOG.info("Service 1 processing: {}", p);
                                             Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
                                             return p + " - processed by Service 1";
                                         }))
-                                .recipientFlow(m -> true, sf -> sf
-                                        .channel(processingChannel())
-                                        .handle((p, h) -> {
+                                .recipientFlow(sf -> sf
+                                        .channel(c -> c.executor(EXECUTOR))
+                                        .<String>handle((p, h) -> {
                                             LOG.info("Service 2 processing: {}", p);
                                             Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
                                             return p + " - processed by Service 2";
                                         }))
-                                .recipientFlow(m -> true, sf -> sf
-                                        .channel(processingChannel())
-                                        .handle((p, h) -> {
+                                .recipientFlow(sf -> sf
+                                        .channel(c -> c.executor(EXECUTOR))
+                                        .<String>handle((p, h) -> {
                                             LOG.info("Service 3 processing: {}", p);
                                             Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
                                             return p + " - processed by Service 3";
@@ -56,14 +49,13 @@ class ScatterGatherFlowConfiguration {
                                     group.getMessages().forEach(m -> result.append(m.getPayload()));
                                     return result.toString().trim();
                                 })
-                )
-                .handle((payload, headers) -> {
-                    LOG.info("Final result: {}", payload);
-                    LOG.info("Final headers: {}", headers);
-                    return payload;
+                ).handle(String.class, (p, h) -> {
+                    LOG.info("Subflow processing: {}", p);
+                    return p;
                 });
     }
 
+/*
     @Bean
     IntegrationFlow initiateFlow() {
         return IntegrationFlow.fromSupplier(() -> "Test Message",
@@ -71,4 +63,5 @@ class ScatterGatherFlowConfiguration {
                 .channel("scatterGather.input")
                 .get();
     }
+*/
 }
